@@ -50,7 +50,7 @@ def win32_clipboard_ctx(timeout=0.5, step=0.001):
     polling for access, timing out after the specified number of seconds.
 
     Arguments:
-     - *timeout* (float, default: 0.5) -- timeout in seconds
+     - *timeout* (float, default: 0.5) -- timeout in seconds.
      - *step* (float, default: 0.001) -- number of seconds between each
        attempt to open the clipboard.
 
@@ -143,6 +143,25 @@ class Win32Clipboard(BaseClipboard):
     def clear_clipboard(cls):
         with win32_clipboard_ctx():
             win32clipboard.EmptyClipboard()
+
+    @classmethod
+    def wait_for_change(cls, timeout, step=0.001):
+        # This method determines if the system clipboard has changed by
+        #  repeatedly checking the current sequence number.
+        last_seq_no = win32clipboard.GetClipboardSequenceNumber()
+        timeout = time.time() + float(timeout)
+        step = float(step)
+        result = False
+        while time.time() < timeout:
+            if win32clipboard.GetClipboardSequenceNumber() != last_seq_no:
+                result = True
+
+            if result:
+                break
+
+            # Failure. Try again after *step* seconds.
+            time.sleep(step)
+        return result
 
     #-----------------------------------------------------------------------
 

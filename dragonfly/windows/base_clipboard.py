@@ -30,6 +30,7 @@ import locale
 import logging
 import os
 import re
+import time
 
 from six import text_type, binary_type
 
@@ -83,6 +84,39 @@ class BaseClipboard(object):
         Clear the system clipboard.
         """
         raise NotImplementedError()
+
+    @classmethod
+    def wait_for_change(cls, timeout, step=0.001):
+        """
+            Wait (poll) for the system clipboard to change.
+
+            This is a blocking method which returns whether or not the
+            system clipboard changed within a specified timeout period.
+
+            Arguments:
+             - *timeout* (float) -- timeout in seconds.
+             - *step* (float, default: 0.001) -- number of seconds between
+               each check.
+
+        """
+        # By default, this method retrieves the system clipboard every
+        #  *step* seconds until the contents change.  This method should be
+        #  overridden by the sub-class if there is a more efficient way for
+        #  the platform.
+        clipboard1 = cls(from_system=True)
+        clipboard2 = cls()
+        timeout = time.time() + float(timeout)
+        step = float(step)
+        result = False
+        while time.time() < timeout:
+            clipboard2.copy_from_system()
+            result = clipboard2 != clipboard1
+            if result:
+                break
+
+            # Failure. Try again after *step* seconds.
+            time.sleep(step)
+        return result
 
     #-----------------------------------------------------------------------
 
