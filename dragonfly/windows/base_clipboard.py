@@ -32,7 +32,7 @@ import os
 import re
 import time
 
-from six import text_type, binary_type
+from six import text_type, binary_type, integer_types
 
 
 #===========================================================================
@@ -86,7 +86,7 @@ class BaseClipboard(object):
         raise NotImplementedError()
 
     @classmethod
-    def wait_for_change(cls, timeout, step=0.001):
+    def wait_for_change(cls, timeout, step=0.001, formats=None):
         """
             Wait (poll) for the system clipboard to change.
 
@@ -97,6 +97,9 @@ class BaseClipboard(object):
              - *timeout* (float) -- timeout in seconds.
              - *step* (float, default: 0.001) -- number of seconds between
                each check.
+             - *formats* (iterable, default: None) -- if not None, only
+               changes to the given content formats will register.  If None,
+               all formats will be observed.
 
         """
         # By default, this method retrieves the system clipboard every
@@ -107,10 +110,30 @@ class BaseClipboard(object):
         clipboard2 = cls()
         timeout = time.time() + float(timeout)
         step = float(step)
+        if isinstance(formats, integer_types):
+            formats = (formats,)
+        elif formats:
+            for format in formats:
+                if not isinstance(format, integer_types):
+                    raise TypeError("Invalid clipboard format: %r"
+                                    % format)
         result = False
         while time.time() < timeout:
             clipboard2.copy_from_system()
-            result = clipboard2 != clipboard1
+
+            # Check if the content of any relevant format has changed.
+            if formats:
+                for format in formats:
+                    format_available = clipboard2.has_format(format)
+                    result = (
+                        format_available != clipboard1.has_format(format) or
+                        format_available and clipboard2.get_format(format)
+                        != clipboard1.get_format(format))
+                    if result:
+                        break
+            else:
+                result = clipboard2 != clipboard1
+
             if result:
                 break
 
