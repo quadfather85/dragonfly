@@ -30,9 +30,10 @@ This file implements an interface to the Windows system clipboard.
 
 import contextlib
 import locale
+import sys
 import time
 
-from six import text_type, integer_types
+from six import text_type, integer_types, reraise
 
 import pywintypes
 import win32clipboard
@@ -78,16 +79,21 @@ def win32_clipboard_ctx(timeout=0.5, step=0.001):
             time.sleep(step)
 
     # Try opening the clipboard one more time if it still isn't open.
-    # If this fails, then an error will be raised this time.
+    #  If this fails, then an error will be raised this time.
     if not success:
         win32clipboard.OpenClipboard()
 
     # The clipboard is open now, so yield and close the clipboard
-    # afterwards.
+    #  afterwards, if it is still open.
     try:
         yield
     finally:
-        win32clipboard.CloseClipboard()
+        try:
+            win32clipboard.CloseClipboard()
+        except pywintypes.error as err:
+            # Only ignore Windows error 1418 (ERROR_CLIPBOARD_NOT_OPEN).
+            if err.winerror != 1418:
+                reraise(*sys.exc_info())
 
 
 class Win32Clipboard(BaseClipboard):
