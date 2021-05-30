@@ -119,6 +119,11 @@ engine_tests_dict = {
     ] + common_names + language_names,
 
     "natlink": natlink_names,
+
+    "talon": [
+        "test_language_en_number",
+        "test_dictation",
+    ] + common_names,
 }
 
 
