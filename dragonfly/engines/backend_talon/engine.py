@@ -50,6 +50,15 @@ class TalonEngine(EngineBase):
                               "not running under a supported Talon app.")
         self._interface = DragonflyInterface(self.phrase_begin, self.handle_recognition)
 
+    #-----------------------------------------------------------------------
+
+    def connect(self):
+        pass
+
+    def disconnect(self):
+        for wrapper in self._grammar_wrappers.values():
+            wrapper.grammar.unload()
+
     # -----------------------------------------------------------------------
     # Methods for working with grammars.
 
