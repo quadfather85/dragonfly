@@ -463,6 +463,9 @@ class Grammar(object):
 
         self._engine.unload_grammar(self)
         self._loaded = False
+        for rule in self._rules:
+            # Set each rule's active state to uninitialized.
+            rule._active = None
         self._in_context = False
 
     def get_complexity_string(self):
